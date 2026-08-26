@@ -1,23 +1,25 @@
-# JobFighter (M1)
+# JobFighter (M2)
 
-A multi-tenant, English-only job tracker — currently at **M1**: the core
-pipeline, proven end-to-end via CLI, no web app / auth / database yet.
-See [docs/architecture.md](docs/architecture.md) for the full multi-tenant
-SaaS plan (M1–M4).
+A multi-tenant, English-only job tracker — at **M2**: real multi-tenant
+Postgres/SQLite-backed web app, magic-link auth, privacy/ToS pages, and
+GDPR account deletion, on top of the M1 pipeline core. No scheduler yet
+(runs are user-triggered) — that's M3. See
+[docs/architecture.md](docs/architecture.md) for the full M1–M4 plan.
 
-## What M1 does
+## What it does
 
-Fetches jobs (Adzuna), filters to France, classifies each one for
-English-workplace fit with Claude (fail-closed — see below), checks that
-its apply link still resolves, and writes the result to Excel. Every kept
-job is appended to a local JSONL store (`outputs/<profile>/tracked_jobs.jsonl`)
-so re-runs only classify genuinely new jobs — this file format is the same
-one planned for the M3 git-versioned public archive.
+Sign up with just an email (a one-time link logs you in, no password).
+Set up a profile — target roles, location, skills — and click "Run search
+now" to fetch jobs (Adzuna + JSearch), filter to your country, classify
+each one for English-workplace fit with Claude (fail-closed — see below),
+and check that its apply link still resolves. Matching jobs show up under
+**Latest Matches**; save the ones you want to **My Tracked Jobs**, update
+their status, and export to Excel any time.
 
 ## Scoring
 
-Replaces the old single-confidence model with two explicit, independently
-checked facts about the posting:
+Two explicit, independently checked facts about the posting, not a single
+opaque confidence score:
 
 | description is English | fluent English required | Score |
 |---|---|---|
@@ -26,26 +28,39 @@ checked facts about the posting:
 | no | — | discarded, never stored |
 
 **Fail-closed**: any classification error discards the job — it is never
-guessed in. **Link check is asymmetric on purpose**: only HTTP 404/410 mean
-"dead"; 403 (common bot-blocking on corporate career sites) and network
-errors are kept as "unconfirmed," not silently dropped. Both properties are
-covered by regression tests in `tests/` — see the module docstrings in
-`packages/scoring/classifier.py` and `packages/scoring/link_check.py` for
-why.
+guessed in. **Link check is asymmetric on purpose**: only HTTP 404/410
+mean "dead"; 403 (common bot-blocking on corporate career sites) and
+network errors are kept as "unconfirmed," not silently dropped. Both
+properties — and the account-deletion cascade and magic-link single-use
+enforcement below — are covered by regression tests in `tests/`.
+
+## Data model
+
+Two deliberately separate stores (see `docs/architecture.md` for the full
+schema): **private** account data (`users`, `candidate_profiles`,
+`tracked_jobs`, `runs`) that cascades away completely when you delete your
+account, and **shared/public** `job_postings` (the actual job listings —
+public data, never deleted by any one user's account deletion, never tied
+to a user_id).
 
 ## Quickstart
 
 ```bash
 python -m venv .venv
 .venv\Scripts\pip install -e ".[dev]"
-copy .env.example .env    # fill in ANTHROPIC_API_KEY, ADZUNA_APP_ID, ADZUNA_APP_KEY
-copy profiles\example.json profiles\<your_id>.json   # fill in your details
+copy .env.example .env    # fill in ANTHROPIC_API_KEY, ADZUNA_APP_ID/KEY, SESSION_SECRET
+alembic upgrade head      # creates jobfighter.db (local SQLite) — no Postgres/Docker needed for dev
+uvicorn apps.web.main:app --reload
 ```
-Set `ACTIVE_PROFILE=<your_id>` in `.env`, then:
+Open http://127.0.0.1:8000 — enter your email, and the login link prints
+to the server console (set `RESEND_API_KEY` in `.env` for real delivery
+instead).
+
+CLI (M1, still works — single profile, no web app):
 ```bash
-python cli/job_tracker_cli.py
+copy profiles\example.json profiles\<your_id>.json   # fill in your details
+python cli/job_tracker_cli.py --profile <your_id>
 ```
-Output: `outputs/<your_id>/job_applications.xlsx` (+ `tracked_jobs.jsonl`).
 
 ## Tests
 
@@ -56,16 +71,21 @@ python -m pytest tests/ -v
 ## Project layout
 
 ```
+apps/web/       FastAPI app — routers (auth, dashboard, profile, export, legal), Jinja2 templates
 packages/
-  core/       pipeline.py (run_pipeline_for_user — the one reusable entrypoint), models.py
-  sources/    JobSource plugin architecture — base.py, registry.py, adzuna.py
-  scoring/    classifier.py, prompt.py, link_check.py
-  outputs/    excel_export.py, jsonl_store.py
-cli/          M1 entrypoint
-tests/        regression tests for the two correctness-critical properties above
-docs/         architecture.md — the full M1–M4 plan
-legal/        privacy policy / ToS drafts — NOT legal advice, need real review before real users (M2+)
+  core/         pipeline.py (run_pipeline_for_user — the one reusable entrypoint), models.py, source_config.py
+  sources/      JobSource plugin architecture — base.py, registry.py, adzuna.py, jsearch.py
+  scoring/      classifier.py, prompt.py, link_check.py
+  outputs/      excel_export.py, jsonl_store.py, email_sender.py
+  db/           SQLAlchemy models.py, crud.py, session.py, migrations/ (Alembic)
+cli/            M1 entrypoint — still works, single-profile, no web app needed
+tests/          regression tests: fail-closed scoring, 403-vs-404 link check,
+                magic-link single-use, GDPR delete cascade
+docs/           architecture.md — the full M1–M4 plan
+legal/          privacy policy / ToS — rendered live at /privacy and /terms;
+                NOT legal advice, need real review before real users
 ```
 
-`packages/*` has no web-framework code — the same `run_pipeline_for_user()`
-this CLI calls is what the M2+ scheduler and web app will call too.
+`packages/*` has no web-framework code — `run_pipeline_for_user()` is
+called identically by the CLI and by the web app's `/run` endpoint; the
+M3 scheduler will call the exact same function.

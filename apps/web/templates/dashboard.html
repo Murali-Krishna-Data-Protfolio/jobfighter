@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}My Tracked Jobs — JobFighter{% endblock %}
+{% block content %}
+<div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+  <div>
+    <h1>My Tracked Jobs</h1>
+    <p class="muted">{{ tracked | length }} tracked · {{ profile.candidate_name if profile else '' }} · {{ profile.location if profile else '' }}</p>
+  </div>
+  <form method="post" action="/run">
+    <button class="btn" type="submit">Run search now</button>
+  </form>
+</div>
+
+<div class="card">
+  {% if not tracked %}
+    <p class="muted">Nothing tracked yet. Go to <a href="/matches">Latest Matches</a> and save jobs you're interested in.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Title</th><th>Company</th><th>Score</th><th>Link</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for t in tracked %}
+      <tr>
+        <td>{{ t.posting.title }}</td>
+        <td>{{ t.posting.company }}</td>
+        <td><span class="badge {{ 'score-1' if t.posting.score == 1.0 else 'score-05' }}">{{ t.posting.score }}</span></td>
+        <td><a href="{{ t.posting.url }}" target="_blank" rel="noopener">Open</a>
+          {% if t.posting.link_status == 'unconfirmed' %}<span class="badge unconfirmed">unconfirmed</span>{% endif %}
+        </td>
+        <td>
+          <select hx-post="/status/{{ t.id }}" hx-trigger="change" hx-swap="none" name="status">
+            {% for choice in status_choices %}
+              <option value="{{ choice }}" {{ 'selected' if t.status == choice else '' }}>{{ choice }}</option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -76,7 +76,7 @@ def _write_jobs_sheet(wb: Workbook, scored_jobs: list[ScoredJob]) -> None:
 
         values = [
             sj.date_seen.isoformat(), job.job_id, job.title, job.company,
-            job.location, job.salary or "Not specified", "Saved", job.url,
+            job.location, job.salary or "Not specified", sj.status, job.url,
             preview, result.score, result.requires_fluent_english,
             job.search_query, result.reason, result.link_status,
         ]

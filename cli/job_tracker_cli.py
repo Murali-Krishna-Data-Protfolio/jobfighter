@@ -40,10 +40,9 @@ except ImportError:
     pass
 
 from packages.core.pipeline import run_pipeline_for_user
+from packages.core.source_config import build_sources
 from packages.outputs.excel_export import write_excel
 from packages.outputs.jsonl_store import append_new, load_existing
-from packages.sources.adzuna import AdzunaSource
-from packages.sources.base import JobSource
 
 
 def load_profile(profile_id: str) -> dict:
@@ -54,20 +53,6 @@ def load_profile(profile_id: str) -> dict:
         sys.exit(1)
     with open(path, encoding="utf-8") as f:
         return json.load(f)
-
-
-def build_sources() -> list[JobSource]:
-    """M1: Adzuna only (the one reliable source proven in the old tool).
-    Adding a source here is exactly one line once its class exists in
-    packages/sources/ — see registry.py for the extensible version this
-    grows into once sources are configured per-profile from the DB."""
-    sources: list[JobSource] = []
-    if os.environ.get("ADZUNA_APP_ID") and os.environ.get("ADZUNA_APP_KEY"):
-        sources.append(AdzunaSource({
-            "app_id": os.environ["ADZUNA_APP_ID"],
-            "app_key": os.environ["ADZUNA_APP_KEY"],
-        }))
-    return sources
 
 
 def banner(text: str) -> None:

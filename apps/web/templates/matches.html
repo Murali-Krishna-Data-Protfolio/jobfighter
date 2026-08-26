@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Latest Matches — JobFighter{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Latest Matches</h1>
+  <p class="muted">Every English-workplace job JobFighter has found for your target roles that you haven't saved yet.</p>
+</div>
+
+<div class="card">
+  {% if not matches %}
+    <p class="muted">No matches yet. Click <a href="/dashboard">My Tracked Jobs</a> and "Run search now".</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Title</th><th>Company</th><th>Location</th><th>Score</th><th>Link</th><th></th></tr></thead>
+    <tbody>
+      {% for m in matches %}
+      <tr id="match-{{ m.id }}">
+        <td>{{ m.title }}</td>
+        <td>{{ m.company }}</td>
+        <td>{{ m.location }}</td>
+        <td><span class="badge {{ 'score-1' if m.score == 1.0 else 'score-05' }}">{{ m.score }}</span></td>
+        <td><a href="{{ m.url }}" target="_blank" rel="noopener">Open</a></td>
+        <td>
+          <button class="btn secondary" hx-post="/track/{{ m.id }}" hx-target="#match-{{ m.id }}" hx-swap="outerHTML">Save</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

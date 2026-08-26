@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Set up your profile' if is_onboarding else 'Edit profile' }} — JobFighter{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ 'Set up your profile' if is_onboarding else 'Edit profile' }}</h1>
+  <p class="muted">This drives what JobFighter searches for and how each job is judged — no code, just this form.</p>
+
+  <form method="post" action="{{ '/onboarding' if is_onboarding else '/profile' }}">
+    <label for="candidate_name">Full name</label>
+    <input type="text" id="candidate_name" name="candidate_name" required value="{{ profile.candidate_name if profile else '' }}">
+
+    <label for="education">Education</label>
+    <input type="text" id="education" name="education" value="{{ profile.education if profile else '' }}">
+
+    <label for="location">Location</label>
+    <input type="text" id="location" name="location" value="{{ profile.location if profile else 'France' }}">
+
+    <label for="country_code">Country code (ISO-2)</label>
+    <input type="text" id="country_code" name="country_code" maxlength="2" value="{{ profile.country_code if profile else 'FR' }}">
+
+    <label for="target_roles">Target roles (one per line)</label>
+    <textarea id="target_roles" name="target_roles" rows="4" required placeholder="Data Analyst&#10;Data Engineer">{{ (profile.target_roles | join('\n')) if profile else '' }}</textarea>
+
+    <label for="skills">Key skills (comma-separated)</label>
+    <input type="text" id="skills" name="skills" value="{{ (profile.skills | join(', ')) if profile else '' }}">
+
+    <label for="min_salary_hourly_eur">Minimum salary (EUR/hour)</label>
+    <input type="number" id="min_salary_hourly_eur" name="min_salary_hourly_eur" step="1" value="{{ profile.min_salary_hourly_eur if profile and profile.min_salary_hourly_eur else '' }}">
+
+    <label for="notification_email">Notification email</label>
+    <input type="email" id="notification_email" name="notification_email" required value="{{ profile.notification_email if profile else user.email }}">
+
+    {% if is_onboarding %}
+      <div style="margin-top:20px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+          <input type="checkbox" name="accept_privacy" required style="width:auto;">
+          I agree to the <a href="/privacy" target="_blank">Privacy Policy</a> and <a href="/terms" target="_blank">Terms of Service</a>
+        </label>
+      </div>
+    {% endif %}
+
+    <div style="margin-top:18px;">
+      <button class="btn" type="submit">{{ 'Create profile' if is_onboarding else 'Save changes' }}</button>
+    </div>
+  </form>
+</div>
+
+{% if not is_onboarding %}
+<div class="card">
+  <h2>Delete account</h2>
+  <p class="muted">Permanently deletes your profile, tracked jobs, and run history. Job postings themselves are public data and are not affected for other users.</p>
+  <a class="btn danger" href="/settings/delete-account">Delete my account</a>
+</div>
+{% endif %}
+{% endblock %}

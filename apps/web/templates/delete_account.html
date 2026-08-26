@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Delete account — JobFighter{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:40px auto;">
+  <h1>Delete your account?</h1>
+  <p class="muted">This permanently deletes your profile, tracked jobs, and run history. It cannot be undone. Job postings themselves are shared public data and are not affected.</p>
+  <form method="post" action="/settings/delete-account">
+    <button class="btn danger" type="submit">Yes, permanently delete my account</button>
+    <a class="btn secondary" href="/dashboard">Cancel</a>
+  </form>
+</div>
+{% endblock %}

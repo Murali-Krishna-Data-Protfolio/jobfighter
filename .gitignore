@@ -2,6 +2,10 @@
 .env
 credentials.json
 
+# Local dev database (DATABASE_URL unset -> sqlite file at repo root)
+*.db
+*.db-journal
+
 # Generated outputs (per-profile tracked data + Excel exports) — root only;
 # an unanchored "outputs/" would also match packages/outputs/, which is
 # source code, not generated data.

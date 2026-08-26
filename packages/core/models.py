@@ -57,6 +57,10 @@ class ScoredJob(BaseModel):
     job: NormalizedJob
     result: ScoreResult
     date_seen: date = Field(default_factory=date.today)
+    status: str = "Saved"  # application status — "Saved" is correct for a
+    # freshly-classified job (M1 CLI); M2's export route overrides this
+    # with the user's actual TrackedJob.status, since by then it may no
+    # longer be "Saved" (Applied/Interview/Offer/Rejected).
 
 
 class RunResult(BaseModel):

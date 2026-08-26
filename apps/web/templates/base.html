@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}JobFighter{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+  <div class="nav">
+    <span class="brand">JobFighter</span>
+    {% if user %}
+      <a href="/dashboard">My Tracked Jobs</a>
+      <a href="/matches">Latest Matches</a>
+      <a href="/profile">Profile</a>
+      <a href="/export/xlsx">Export Excel</a>
+      <a href="/logout">Log out</a>
+    {% else %}
+      <a href="/login">Log in</a>
+    {% endif %}
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </div>
+  <div class="container">
+    {% if request.query_params.get('flash') %}
+      <div class="flash">{{ request.query_params.get('flash') }}</div>
+    {% endif %}
+    {% if request.query_params.get('error') %}
+      <div class="flash error">{{ request.query_params.get('error') }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
