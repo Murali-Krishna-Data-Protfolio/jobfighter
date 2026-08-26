@@ -1,0 +1,24 @@
+# Secrets
+.env
+credentials.json
+
+# Generated outputs (per-profile tracked data + Excel exports) — root only;
+# an unanchored "outputs/" would also match packages/outputs/, which is
+# source code, not generated data.
+/outputs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

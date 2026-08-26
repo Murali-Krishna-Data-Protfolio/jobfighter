@@ -1,0 +1,26 @@
+{
+  "profile_id": "murali",
+  "candidate_name": "Murali Krishna",
+  "education": "Masters in Data Science & Business Analytics, EDC Paris Business School",
+  "location": "France",
+  "country_code": "FR",
+  "languages": {
+    "English": "Native",
+    "French": "Beginner"
+  },
+  "min_salary_hourly_eur": 100,
+  "target_roles": [
+    "Data Analyst",
+    "Data Engineer",
+    "Business Analyst",
+    "BI Developer",
+    "Analytics Engineer"
+  ],
+  "skills": [
+    "Power BI", "Tableau", "Advanced Excel", "SQL", "Python", "SAP BI",
+    "ETL", "Data Warehousing", "Airflow", "dbt", "Apache Spark", "Pandas",
+    "Azure", "AWS", "Google BigQuery", "Snowflake", "Microsoft Fabric",
+    "Machine Learning", "Power Automate", "Power Apps", "Generative AI", "LLMs"
+  ],
+  "notification_email": "gkmurali37@gmail.com"
+}

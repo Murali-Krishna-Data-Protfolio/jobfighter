@@ -1,0 +1,20 @@
+{
+  "_comment": "Copy this file to profiles/<your_id>.json and fill it in. Set ACTIVE_PROFILE=<your_id> in .env. No code changes needed. This shape carries over into the candidate_profiles DB table from M2 onward.",
+
+  "profile_id": "example",
+  "candidate_name": "Your Full Name",
+  "education": "Your degree, University",
+  "location": "France",
+  "country_code": "FR",
+  "languages": {
+    "English": "Native",
+    "French": "Beginner"
+  },
+  "min_salary_hourly_eur": 50,
+  "target_roles": [
+    "Data Analyst",
+    "Data Engineer"
+  ],
+  "skills": ["SQL", "Python", "Power BI", "Tableau", "Excel"],
+  "notification_email": "you@example.com"
+}
