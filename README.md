@@ -1,4 +1,4 @@
-# Job Tracker (M1)
+# JobFighter (M1)
 
 A multi-tenant, English-only job tracker — currently at **M1**: the core
 pipeline, proven end-to-end via CLI, no web app / auth / database yet.

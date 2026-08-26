@@ -78,7 +78,7 @@ def banner(text: str) -> None:
 
 async def main_async(profile_id: str) -> int:
     start = time.time()
-    banner(f"Job Tracker CLI (M1)  |  profile={profile_id}")
+    banner(f"JobFighter CLI (M1)  |  profile={profile_id}")
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key or not api_key.startswith("sk-"):
@@ -132,7 +132,7 @@ async def main_async(profile_id: str) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Job Tracker CLI (M1)")
+    parser = argparse.ArgumentParser(description="JobFighter CLI (M1)")
     parser.add_argument("--profile", default=os.environ.get("ACTIVE_PROFILE", "example"))
     args = parser.parse_args()
     sys.exit(asyncio.run(main_async(args.profile)))

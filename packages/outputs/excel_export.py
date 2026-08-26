@@ -107,7 +107,7 @@ def _write_jobs_sheet(wb: Workbook, scored_jobs: list[ScoredJob]) -> None:
 def _build_dashboard(wb: Workbook, scored_jobs: list[ScoredJob]) -> None:
     ws = wb.create_sheet("Dashboard")
     ws.merge_cells("A1:H1")
-    ws["A1"].value = "Job Tracker — Dashboard"
+    ws["A1"].value = "JobFighter — Dashboard"
     ws["A1"].font = Font(bold=True, size=16, color=C_HEADER_FG)
     ws["A1"].fill = PatternFill("solid", fgColor=C_HEADER_BG)
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")

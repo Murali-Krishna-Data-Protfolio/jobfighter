@@ -1,7 +1,7 @@
 [project]
-name = "job-tracker-app"
+name = "jobfighter"
 version = "0.1.0"
-description = "Multi-tenant, English-only job tracker — M1: core pipeline (CLI only)"
+description = "JobFighter — multi-tenant, English-only job tracker. M1: core pipeline (CLI only)"
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.25.0",

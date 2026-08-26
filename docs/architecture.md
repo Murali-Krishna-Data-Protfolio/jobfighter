@@ -1,4 +1,4 @@
-# Job Tracker SaaS — New Multi-Tenant Repo, Built From Scratch
+# JobFighter — New Multi-Tenant Repo, Built From Scratch
 
 ## Context
 
@@ -7,12 +7,12 @@ The existing tool at `C:\Claude\job_tracker` is a single-user, locally-run scrip
 This plan carries forward everything that was hard-won and correct in the old tool (fail-closed classification, the 403-is-not-dead link-check asymmetry, rebuild-not-delete Excel writes, UTF-8-safe I/O, profile-driven config) and redesigns everything that was single-user-only (auth, storage, scheduling, hosting, compliance).
 
 **Confirmed decisions** (from user + this session):
-1. New, separate repo (`job-tracker-app`) — no shared history with `job_tracker`.
+1. New, separate repo (`jobfighter`) — no shared history with `job_tracker`.
 2. Single hosted multi-tenant service (not "everyone runs their own copy").
 3. Real public product for strangers → GDPR-conscious design, privacy policy/ToS, and abuse-resistant shared API quotas are **required from early on**, not deferred hardening.
 4. Source layer: extensible plugin architecture; implement Adzuna + JSearch (covers LinkedIn/Glassdoor) now; France Travail low-priority/disabled-by-default; Station F and named company career pages (Allianz/AXA/BD) get a generic Greenhouse/Lever-backed `CareerPageSource`, not bespoke scrapers.
 5. Two-tier scoring replaces the old single-confidence model: description-in-English + fluent-English-required → **1.0**; description-in-English only → **0.5**; anything else → **discarded, never stored**.
-6. Job postings (public data) are versioned in a **separate** git repo (`job-tracker-data`) as monthly-chunked JSONL, auto-committed after each run — kept entirely separate from private per-user account data in Postgres.
+6. Job postings (public data) are versioned in a **separate** git repo (`jobfighter-data`) as monthly-chunked JSONL, auto-committed after each run — kept entirely separate from private per-user account data in Postgres.
 7. Telegraph is **dropped entirely, no replacement** — the web dashboard is the "any browser" view.
 
 ---
@@ -36,7 +36,7 @@ This plan carries forward everything that was hard-won and correct in the old to
 
 Two deliberately separate stores:
 
-**A. Git-versioned public archive** (`job-tracker-data` repo, separate from the app repo) — `archive/YYYY-MM.jsonl`, one row per posting: `job_id, title, company, location, url, description, source, search_query, score, description_is_english, requires_fluent_english, date_seen, date_last_seen`. Monthly chunking from day one (the old tool's Telegraph `CONTENT_TOO_BIG` failure at ~500 rows in one blob is the direct lesson here). Committed/pushed via a dedicated bot identity + scoped deploy key, never the developer's personal credentials. This is public data (job postings), so no personal-data/GDPR concerns attach to this store.
+**A. Git-versioned public archive** (`jobfighter-data` repo, separate from the app repo) — `archive/YYYY-MM.jsonl`, one row per posting: `job_id, title, company, location, url, description, source, search_query, score, description_is_english, requires_fluent_english, date_seen, date_last_seen`. Monthly chunking from day one (the old tool's Telegraph `CONTENT_TOO_BIG` failure at ~500 rows in one blob is the direct lesson here). Committed/pushed via a dedicated bot identity + scoped deploy key, never the developer's personal credentials. This is public data (job postings), so no personal-data/GDPR concerns attach to this store.
 
 **B. Private Postgres** (all account/personal data — the GDPR-relevant store):
 ```
@@ -104,7 +104,7 @@ def score_job(description_is_english, requires_fluent_english) -> float | None:
 ## Output Layer
 
 - **Excel export**: on-demand `GET /export/xlsx`, generated fresh from `tracked_jobs` each request — reuses `excel_writer.py`'s Jobs+Dashboard structure and (critically) the *rebuild-from-scratch* pattern, which is moot-by-construction here since nothing is incrementally mutated anymore.
-- **Git archive**: pipeline step after scoring — upsert into `job-tracker-data`, monthly JSONL files, commit message `"run {run_id}: +{n_new} jobs, {n_updated} link updates — {date}"`, push via bot deploy key.
+- **Git archive**: pipeline step after scoring — upsert into `jobfighter-data`, monthly JSONL files, commit message `"run {run_id}: +{n_new} jobs, {n_updated} link updates — {date}"`, push via bot deploy key.
 - **No Telegraph, no share-link** (per decision) — dashboard is the only "browser view."
 - **Email digest**: port the existing HTML template structure (gradient header/KPI row/breakdown tables) into Jinja2, sent via the transactional provider, triggered per-user-run by the scheduler. CTA links back into the web dashboard.
 
@@ -113,7 +113,7 @@ def score_job(description_is_english, requires_fluent_english) -> float | None:
 ## Repo Structure
 
 ```
-job-tracker-app/
+jobfighter/
 ├── apps/web/                 # FastAPI: routers (auth, dashboard, profile, export, internal), Jinja2 templates
 ├── packages/
 │   ├── core/                 # pipeline.py: run_pipeline_for_user() — the one reusable entrypoint
@@ -127,7 +127,7 @@ job-tracker-app/
 ├── legal/                      # privacy-policy.md, terms-of-service.md — STARTING DRAFTS, need real review before real users
 ├── Dockerfile, render.yaml, alembic.ini, pyproject.toml, .env.example, README.md
 
-job-tracker-data/               # SEPARATE repo — archive/*.jsonl only, no app code, no user data
+jobfighter-data/               # SEPARATE repo — archive/*.jsonl only, no app code, no user data
 ```
 
 `packages/*` has zero HTTP-framework code — CLI, scheduler, and web app all import the same pipeline, which is what keeps M1's CLI build directly reusable rather than thrown away.
@@ -168,5 +168,5 @@ Each phase is independently demonstrable.
 
 - **M1**: `python cli/job_tracker_cli.py` → inspect the produced `.xlsx` for correct scores (1.0/0.5) and confirm zero rows exist that failed classification (fail-closed proof). Run `pytest tests/test_scoring.py tests/test_link_check.py` — both must cover the exact regression cases from the old tool (trailing-text-after-JSON parses correctly; a 403 response is kept, a 404 is dropped).
 - **M2**: sign up two test accounts via magic link (confirm email actually arrives, not just logs to console), confirm each sees only their own `tracked_jobs`, confirm account deletion actually removes `candidate_profiles`/`tracked_jobs` and leaves `job_postings` untouched, confirm Excel export downloads correctly.
-- **M3**: seed 3-5 profiles with different `schedule_cron`, leave running 24h+, check `runs` table for accurate per-run status, check `job-tracker-data` repo for real commits, deliberately break one profile's config and confirm the others still ran.
+- **M3**: seed 3-5 profiles with different `schedule_cron`, leave running 24h+, check `runs` table for accurate per-run status, check `jobfighter-data` repo for real commits, deliberately break one profile's config and confirm the others still ran.
 - **M4**: confirm France Travail and CareerPageSource sources register and (if enabled) fetch without errors; confirm digest emails render correctly and arrive via the transactional provider; load-test the rate limiter against the shared API quota.
