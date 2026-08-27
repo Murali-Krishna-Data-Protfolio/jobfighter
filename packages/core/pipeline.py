@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from packages.core.models import NormalizedJob, RunResult, ScoredJob
+from packages.core.rate_limiter import acquire as rate_limit_acquire
 from packages.scoring.classifier import classify_jobs
 from packages.scoring.link_check import check_url
 from packages.sources.base import JobSource
@@ -34,12 +35,19 @@ async def _fetch_all(
     """Fetch from every source for every query, deduping by job_id as we
     go — mirrors fetch_all_jobs()'s aggregation in the old tool, one
     source's failure never blocks another (JobSource.fetch() itself never
-    raises, per its contract)."""
+    raises, per its contract).
+
+    Each call goes through the global per-source_type rate limiter first
+    (docs/architecture.md's API-budget note: Adzuna/JSearch keys are
+    shared across every tenant) — enforced here, once, so both the M2
+    manual "Run search now" button and the M3 scheduler sweep are
+    protected identically without touching every JobSource."""
     seen: set[str] = set()
     out: list[NormalizedJob] = []
 
     for source in sources:
         for query in queries:
+            await rate_limit_acquire(source.source_type)
             raw_results = await source.fetch(query, location, country_code)
             for raw in raw_results:
                 try:

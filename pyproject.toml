@@ -19,8 +19,11 @@ dependencies = [
     "itsdangerous>=2.2.0",
     "python-multipart>=0.0.9",
     "markdown>=3.6",
+    "croniter>=2.0.5",
+    "gitpython>=3.1.43",
+    "tzdata>=2024.1; sys_platform == 'win32'",  # zoneinfo has no OS tz database to fall back on on Windows
 ]
-# M3+: apscheduler, gitpython, (RQ+redis only if the M4 trigger condition is hit)
+# M4+: RQ+redis only if the M3 data shows the scheduling window actually overruns
 
 [project.optional-dependencies]
 dev = [

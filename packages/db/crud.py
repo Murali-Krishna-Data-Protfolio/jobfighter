@@ -70,6 +70,14 @@ async def get_profile(session: AsyncSession, profile_id: str) -> Optional[Candid
     return await session.get(CandidateProfile, profile_id)
 
 
+async def get_active_profiles(session: AsyncSession) -> list[CandidateProfile]:
+    """Every active profile across every user — the scheduler sweep's
+    (M3) candidate set. Unlike get_profiles_for_user, deliberately not
+    scoped to one user: the sweep has to consider every tenant."""
+    result = await session.execute(select(CandidateProfile).where(CandidateProfile.is_active.is_(True)))
+    return list(result.scalars().all())
+
+
 async def update_profile(session: AsyncSession, profile: CandidateProfile, **fields) -> CandidateProfile:
     for key, value in fields.items():
         setattr(profile, key, value)
@@ -167,3 +175,14 @@ async def save_run(session: AsyncSession, run: RunResult) -> Run:
     session.add(row)
     await session.flush()
     return row
+
+
+async def get_latest_run_for_profile(session: AsyncSession, profile_id: str) -> Optional[Run]:
+    """Most recent run for one profile, or None if it has never run —
+    the input to both the scheduler's cron due-ness check and the manual
+    "Run search now" endpoint's hard run-frequency cap (see
+    packages/core/schedule.py)."""
+    result = await session.execute(
+        select(Run).where(Run.profile_id == profile_id).order_by(Run.started_at.desc()).limit(1)
+    )
+    return result.scalar_one_or_none()

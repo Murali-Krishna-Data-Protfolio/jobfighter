@@ -12,9 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.web.deps import get_current_user
 from packages.core.pipeline import run_pipeline_for_user
+from packages.core.schedule import run_cap_remaining
 from packages.core.source_config import build_sources
 from packages.db.crud import (
     get_existing_job_ids,
+    get_latest_run_for_profile,
     get_profiles_for_user,
     get_tracked_jobs_for_user,
     save_run,
@@ -98,6 +100,18 @@ async def run_now(request: Request, session: AsyncSession = Depends(get_session)
     sources = build_sources()
     if not sources:
         return RedirectResponse("/dashboard?error=No+sources+configured+on+the+server.", status_code=303)
+
+    # Server-enforced run-frequency cap (docs/architecture.md's API-budget
+    # note) — applies here identically to the scheduler sweep (M3), so
+    # this button can't be mashed to bypass the shared-quota protection.
+    latest_run = await get_latest_run_for_profile(session, profile.id)
+    wait = run_cap_remaining(latest_run.started_at if latest_run else None)
+    if wait is not None:
+        hours = wait.total_seconds() / 3600
+        return RedirectResponse(
+            f"/dashboard?error=Please+wait+~{hours:.1f}h+before+running+again+(server+cap%3A+1+run%2F24h).",
+            status_code=303,
+        )
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     existing_ids = await get_existing_job_ids(session)
