@@ -22,6 +22,16 @@ import asyncio
 import logging
 import os
 import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env", override=True)
+except ImportError:
+    pass
 
 from packages.core.pipeline import run_pipeline_for_user
 from packages.core.schedule import is_due
@@ -39,6 +49,13 @@ from packages.outputs.git_archive import archive_and_commit
 from packages.sources.base import JobSource
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# httpx/httpcore log the full request URL at INFO — for Adzuna/JSearch
+# that URL carries the shared API key as a query param, so left at the
+# root INFO level this prints live credentials to whatever captures this
+# process's stdout (a Render Cron Job's log stream included). Force them
+# down to WARNING regardless of the app's own log level.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger("scheduler")
 
 MAX_CONCURRENT_RUNS = int(os.environ.get("SCHEDULER_MAX_CONCURRENT_RUNS", "3"))
