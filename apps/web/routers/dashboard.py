@@ -79,11 +79,26 @@ async def matches(request: Request, session: AsyncSession = Depends(get_session)
     )
     all_postings = list(result.scalars().all())
 
+    # Match primarily on search_query (the exact target-role string that
+    # surfaced this posting via a source's fetch() call) rather than only a
+    # title substring — Adzuna and friends match a query against the full
+    # listing (description, category...), so a genuinely relevant result's
+    # title often doesn't literally contain the role name (e.g. querying
+    # "Project Manager" can surface "Modernization & Control Solutions
+    # Leader Europe" - a real PM-shaped role Adzuna judged relevant, title-
+    # substring matching alone would silently hide it from the user who
+    # searched for it). Title substring stays as a second, broader net so a
+    # posting fetched under a different profile's query can still surface
+    # here if it genuinely matches this user's role by name.
     target_roles_lower = [r.lower() for r in (profile.target_roles or [])]
     match_list = [
         p for p in all_postings
         if p.id not in already_tracked_ids
-        and (not target_roles_lower or any(r in p.title.lower() for r in target_roles_lower))
+        and (
+            not target_roles_lower
+            or (p.search_query or "").lower() in target_roles_lower
+            or any(r in p.title.lower() for r in target_roles_lower)
+        )
     ]
 
     return templates.TemplateResponse(request, "matches.html", {"user": user, "matches": match_list})
